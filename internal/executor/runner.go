@@ -27,62 +27,72 @@
 // 	return models.Result{Status: "Accepted", Stdout: stdout}
 // }
 
-package runner
+package executor
 
 import (
-	"errors"
+	"bytes"
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
 
-	"Code-Execution-Engine/internal/docker"
 	"Code-Execution-Engine/internal/models"
 )
 
-// Run is the single entry point for code execution.
-// Worker layer will ONLY call this function.
-func Run(sub models.Submission) models.Result {
+func Execute(sub models.Submission) models.Result {
 
-	// Language routing (Phase 2: only Python supported)
-	switch sub.Language {
+	// 1️⃣ TEMP FOLDER BAN RAHA HAI (HOST MACHINE)
+	dir, _ := os.MkdirTemp("", "exec-*")
+	defer os.RemoveAll(dir)
 
-	case "python":
-		return runPython(sub)
+	// 2️⃣ PYTHON FILE BAN RAHI HAI
+	codePath := filepath.Join(dir, "main.py")
+	os.WriteFile(codePath, []byte(sub.Code), 0644)
 
-	default:
-		return models.Result{
-			Status: "Unsupported Language",
-		}
-	}
-}
+	// 3️⃣ TIME LIMIT SET
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		time.Duration(sub.TimeMs)*time.Millisecond,
+	)
+	defer cancel()
 
-// --------------------
-// Python runner
-// --------------------
-func runPython(sub models.Submission) models.Result {
-
-	stdout, stderr, err := docker.RunPython(
-		sub.WorkDir,
-		sub.TimeMs,
-		sub.MemoryMB,
+	// 4️⃣ 👉👉 YAHIN CONTAINER BAN RAHA HAI 👈👈
+	cmd := exec.CommandContext(
+		ctx,
+		"docker", "run", "--rm",
+		"--network", "none",
+		"-m", "256m",
+		"-v", dir+":/code",
+		"python:3.11-alpine",
+		"python", "/code/main.py",
 	)
 
-	// Time Limit Exceeded
-	if err != nil && errors.Is(err, docker.ErrTimeLimitExceeded) {
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// 5️⃣ RESULT DECISION
+
+	// ⏰ TIME LIMIT
+	if err != nil && ctx.Err() == context.DeadlineExceeded {
+		return models.Result{Status: "Time Limit Exceeded"}
+	}
+
+	// 💥 PYTHON ERROR
+	if stderr.String() != "" {
 		return models.Result{
-			Status: "Time Limit Exceeded",
+			Status: "Runtime Error",
+			Stdout: stdout.String(),
+			Stderr: stderr.String(),
 		}
 	}
 
-	// Runtime Error
-	if stderr != "" {
-		return models.Result{
-			Status:  "Runtime Error",
-			Stdout:  stdout,
-			Stderr:  stderr,
-		}
-	}
-
-	// Successful execution
+	// ✅ SUCCESS
 	return models.Result{
 		Status: "Accepted",
-		Stdout: stdout,
+		Stdout: stdout.String(),
 	}
 }
