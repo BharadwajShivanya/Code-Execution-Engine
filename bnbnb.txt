@@ -1,0 +1,12 @@
+API → Queue → Worker → Runner → Docker → Python code → Result
+
+ye karna hai. abhi first cheeze api nhi bani hai .
+
+API:
+user se code leta hai
+language leta hai (python)
+limits set karta hai (time, memory)
+job queue me bhej deta hai
+
+❌code execute nahi karta
+❌Docker nahi chalata

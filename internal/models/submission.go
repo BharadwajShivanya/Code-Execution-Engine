@@ -7,10 +7,5 @@ type Submission struct {
 	Input    string `json:"input"`
 	TimeMs   int    `json:"time_ms"`
 	MemoryMB int    `json:"memory_mb"`
-}
-
-type Result struct {
-	Stdout string `json:"stdout"`
-	Stderr string `json:"stderr"`
-	Status string `json:"status"`
+	Status   string `json:"status"`
 }
