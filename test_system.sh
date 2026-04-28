@@ -36,14 +36,14 @@ print_status $? "Go is installed"
 docker --version > /dev/null 2>&1
 print_status $? "Docker is installed"
 
-redis-cli ping > /dev/null 2>&1
+nc -z localhost 6379 > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     print_status 0 "Redis is running"
 else
     print_info "Redis not running - starting it..."
     docker run -d -p 6379:6379 redis > /dev/null 2>&1
     sleep 2
-    redis-cli ping > /dev/null 2>&1
+    nc -z localhost 6379 > /dev/null 2>&1
     print_status $? "Redis started successfully"
 fi
 
@@ -74,7 +74,7 @@ echo -e "${BLUE}🚀 Step 4: Starting Services${NC}"
 echo "────────────────────────────────────────────"
 
 print_info "Starting API server in background..."
-go run cmd/api/main.go > /tmp/api.log 2>&1 &
+go run ./cmd/api > /tmp/api.log 2>&1 &
 API_PID=$!
 sleep 2
 
@@ -104,7 +104,7 @@ echo "────────────────────────�
 
 # Test 1: Simple print statement
 print_info "Test 1: Simple Python program (should be Accepted)"
-RESPONSE=$(curl -s -X POST http://localhost:8090/submit \
+RESPONSE=$(curl -s -X POST http://localhost:8090/api/v1/submissions \
   -H "Content-Type: application/json" \
   -d '{"language":"python","code":"print(\"Hello World\")","time_ms":2000,"memory_mb":128}')
 
@@ -114,7 +114,7 @@ else
     print_status 1 "API submission failed: $RESPONSE"
 fi
 
-sleep 1
+sleep 5
 
 # Check worker output
 if grep -q "Result: Accepted" /tmp/worker.log; then
@@ -127,11 +127,11 @@ fi
 
 # Test 2: Runtime error
 print_info "Test 2: Runtime error (should be Runtime Error)"
-RESPONSE=$(curl -s -X POST http://localhost:8090/submit \
+RESPONSE=$(curl -s -X POST http://localhost:8090/api/v1/submissions \
   -H "Content-Type: application/json" \
   -d '{"language":"python","code":"print(undefined_var)","time_ms":2000,"memory_mb":128}')
 
-sleep 1
+sleep 5
 
 if grep -q "Result: Runtime Error" /tmp/worker.log; then
     print_status 0 "Test 2 passed: Runtime error detected correctly"
@@ -142,11 +142,11 @@ fi
 
 # Test 3: Time limit exceeded
 print_info "Test 3: Time limit exceeded (should be Time Limit Exceeded)"
-RESPONSE=$(curl -s -X POST http://localhost:8090/submit \
+RESPONSE=$(curl -s -X POST http://localhost:8090/api/v1/submissions \
   -H "Content-Type: application/json" \
   -d '{"language":"python","code":"import time; time.sleep(5)","time_ms":1000,"memory_mb":128}')
 
-sleep 2
+sleep 8
 
 if grep -q "Result: Time Limit Exceeded" /tmp/worker.log; then
     print_status 0 "Test 3 passed: Time limit enforced correctly"
