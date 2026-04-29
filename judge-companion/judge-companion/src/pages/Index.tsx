@@ -5,6 +5,13 @@ import { ProblemPanel } from "@/components/ProblemPanel";
 import { EditorPanel } from "@/components/EditorPanel";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GripVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface TestResult {
   passed: boolean;
@@ -48,10 +55,24 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8090/api/v1"
 
 const Index = () => {
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [allProblems, setAllProblems] = useState<Problem[]>([]);
+  const [problemListOpen, setProblemListOpen] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [progressHint, setProgressHint] = useState<string | undefined>(undefined);
+
+  const currentIndex = problem ? allProblems.findIndex(p => p.id === problem.id) : -1;
+
+  const handlePrev = useCallback(() => {
+    if (currentIndex > 0) setProblem(allProblems[currentIndex - 1]);
+  }, [currentIndex, allProblems]);
+
+  const handleNext = useCallback(() => {
+    if (currentIndex >= 0 && currentIndex < allProblems.length - 1) {
+      setProblem(allProblems[currentIndex + 1]);
+    }
+  }, [currentIndex, allProblems]);
 
   const executeSubmission = useCallback(
     async (
@@ -90,7 +111,7 @@ const Index = () => {
             return;
           }
 
-          const results: TestResult[] = (data.test_results ?? []).map((r) => ({
+          let results: TestResult[] = (data.test_results ?? []).map((r) => ({
             passed: r.passed,
             input: r.input,
             expected: r.expected,
@@ -98,6 +119,17 @@ const Index = () => {
             verdict: r.verdict,
             stderr: r.stderr,
           }));
+
+          if (results.length === 0 && data.verdict && data.verdict !== "Executed") {
+            results = [{
+              passed: false,
+              input: "Compilation / System Phase",
+              expected: "Successful Compilation",
+              output: data.stdout || "N/A",
+              verdict: data.verdict,
+              stderr: data.stderr || "No compiler output provided.",
+            }];
+          }
 
           const passCount = results.filter((r) => r.passed).length;
           const allExecuted = results.every((r) => r.verdict === "Executed");
@@ -136,9 +168,11 @@ const Index = () => {
 
   const runCustomTest = useCallback(
     (code: string, language: string, input: string) => {
-      executeSubmission(code, language, [{ input, expected: "" }]);
+      const cleanInput = input.trim();
+      const matchedTest = problem?.tests.find(t => t.input.trim() === cleanInput);
+      executeSubmission(code, language, [{ input, expected: matchedTest ? matchedTest.expected : "" }]);
     },
-    [executeSubmission]
+    [executeSubmission, problem]
   );
 
   const submitAllTests = useCallback(
@@ -157,6 +191,7 @@ const Index = () => {
       try {
         const res = await fetch(`${API_BASE}/problems`);
         const problems = (await res.json()) as Problem[];
+        setAllProblems(problems);
         setProblem(problems[0] ?? null);
       } catch {
         setProgressHint("✗ Failed to load problems — is the backend running?");
@@ -168,7 +203,14 @@ const Index = () => {
   return (
     <ThemeProvider defaultTheme="dark">
       <div className="flex flex-col h-screen bg-background">
-        <Header progressHint={progressHint} />
+        <Header 
+          progressHint={progressHint} 
+          onOpenProblemList={() => setProblemListOpen(true)}
+          onPrevProblem={handlePrev}
+          onNextProblem={handleNext}
+          hasPrev={currentIndex > 0}
+          hasNext={currentIndex >= 0 && currentIndex < allProblems.length - 1}
+        />
 
         <div className="flex-1 min-h-0">
           <PanelGroup direction="horizontal" className="h-full">
@@ -199,6 +241,41 @@ const Index = () => {
           </PanelGroup>
         </div>
       </div>
+
+      {/* Problem List Sidebar */}
+      <Sheet open={problemListOpen} onOpenChange={setProblemListOpen}>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-card p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border">
+            <SheetTitle className="text-left">Problem List</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto">
+            {allProblems.map((p, idx) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setProblem(p);
+                  setProblemListOpen(false);
+                }}
+                className={`w-full text-left p-4 border-b border-border hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                  problem?.id === p.id ? "bg-muted" : ""
+                }`}
+              >
+                <div>
+                  <span className="text-muted-foreground mr-3">{idx + 1}.</span>
+                  <span className="font-medium text-foreground">{p.title}</span>
+                </div>
+                <Badge className={
+                  p.difficulty.toLowerCase() === "easy" ? "bg-green-500/20 text-green-400 border-0" :
+                  p.difficulty.toLowerCase() === "medium" ? "bg-yellow-500/20 text-yellow-400 border-0" :
+                  "bg-red-500/20 text-red-400 border-0"
+                }>
+                  {p.difficulty}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </ThemeProvider>
   );
 };

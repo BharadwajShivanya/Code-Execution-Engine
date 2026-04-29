@@ -1,0 +1,8 @@
+Worker started
+Result: Executed
+Result: Accepted
+Result: Accepted
+Result: Compilation Error
+Result: Accepted
+MISMATCH! gotNorm="[]" wantNorm="[0,1]"
+Result: Wrong Answer

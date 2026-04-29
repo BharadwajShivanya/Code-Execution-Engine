@@ -1,0 +1,49 @@
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:32
+[0m[33m[0.208ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="users"
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:117
+[0m[33m[0.070ms] [34;1m[rows:1][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "users" AND sql IS NOT NULL order by type = "table" desc
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:125
+[0m[33m[0.042ms] [34;1m[rows:-][0m SELECT * FROM `users` LIMIT 1
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:32
+[0m[33m[0.028ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="problems"
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:117
+[0m[33m[0.054ms] [34;1m[rows:1][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "problems" AND sql IS NOT NULL order by type = "table" desc
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:125
+[0m[33m[0.021ms] [34;1m[rows:-][0m SELECT * FROM `problems` LIMIT 1
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:32
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="submissions"
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:117
+[0m[33m[0.043ms] [34;1m[rows:2][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "submissions" AND sql IS NOT NULL order by type = "table" desc
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:125
+[0m[33m[0.017ms] [34;1m[rows:-][0m SELECT * FROM `submissions` LIMIT 1
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/go/pkg/mod/github.com/glebarez/sqlite@v1.11.0/migrator.go:293
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "submissions" AND name = "idx_submissions_user_id"
+
+2026/04/30 00:43:34 [32m/Users/shivanyabharadwaj/Desktop/Code-Execution-Engine/internal/db/db.go:50
+[0m[33m[0.180ms] [34;1m[rows:1][0m SELECT count(*) FROM `problems`
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/problems          --> main.listProblemsHandler (4 handlers)
+[GIN-debug] POST   /api/v1/submissions       --> main.submitHandler (5 handlers)
+[GIN-debug] GET    /api/v1/submissions/:id   --> main.getResultHandler (4 handlers)
+[GIN-debug] POST   /api/v1/auth/register     --> main.registerHandler (4 handlers)
+[GIN-debug] POST   /api/v1/auth/login        --> main.loginHandler (4 handlers)
+[GIN-debug] GET    /api/v1/users/me/submissions --> main.mySubmissionsHandler (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8090
+[GIN-debug] [ERROR] listen tcp :8090: bind: address already in use

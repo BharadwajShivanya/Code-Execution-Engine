@@ -1,0 +1,23 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite
+
+Port 8080 is in use, trying another one...
+
+  VITE v5.4.21  ready in 386 ms
+
+  ➜  Local:   http://localhost:8081/
+  ➜  Network: http://192.168.1.10:8081/
+12:51:15 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css
+12:51:30 AM [vite] hmr update /src/components/ProblemPanel.tsx, /src/index.css
+12:59:13 AM [vite] hmr update /src/components/CodeEditor.tsx, /src/index.css
+12:59:13 AM [vite] hmr invalidate /src/components/CodeEditor.tsx Could not Fast Refresh ("defaultCode" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+12:59:13 AM [vite] hmr update /src/index.css, /src/components/EditorPanel.tsx
+1:07:17 AM [vite] hmr update /src/components/Header.tsx, /src/index.css
+1:07:35 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css
+1:15:06 AM [vite] hmr update /src/components/CodeEditor.tsx, /src/index.css
+1:15:06 AM [vite] hmr invalidate /src/components/CodeEditor.tsx Could not Fast Refresh ("defaultCode" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+1:15:06 AM [vite] hmr update /src/index.css, /src/components/EditorPanel.tsx
+1:15:30 AM [vite] hmr update /src/components/EditorPanel.tsx, /src/index.css
+1:15:39 AM [vite] hmr update /src/components/EditorPanel.tsx, /src/index.css
+1:22:33 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Play, Send, RotateCcw, Sparkles, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeEditor, defaultCode } from "@/components/CodeEditor";
+import { CodeEditor } from "@/components/CodeEditor";
+import { boilerplates } from "@/lib/boilerplates";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIHelpPanel } from "@/components/AIHelpPanel";
@@ -24,18 +25,34 @@ interface EditorPanelProps {
 }
 
 export function EditorPanel({ onRun, onSubmit, isRunning, problem }: EditorPanelProps) {
+  const getBoilerplate = (lang: string, pId?: string) => {
+    if (pId && boilerplates[pId] && boilerplates[pId][lang]) {
+      return boilerplates[pId][lang];
+    }
+    return boilerplates["two-sum"]?.[lang] || "";
+  };
+
   const [language, setLanguage] = useState("python");
-  const [code, setCode] = useState(defaultCode.python);
+  const [code, setCode] = useState(getBoilerplate("python", problem?.id));
   const [customInput, setCustomInput] = useState("2 7 11 15\n9");
   const [aiOpen, setAiOpen] = useState(false);
 
+  // Update code when problem changes
+  useEffect(() => {
+    setCode(getBoilerplate(language, problem?.id));
+    // Default custom inputs could be added here if desired
+    if (problem?.tests && problem.tests.length > 0) {
+      setCustomInput(problem.tests[0].input);
+    }
+  }, [problem?.id]);
+
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
-    setCode(defaultCode[newLanguage] || defaultCode.javascript);
+    setCode(getBoilerplate(newLanguage, problem?.id));
   };
 
   const handleReset = () => {
-    setCode(defaultCode[language] || defaultCode.javascript);
+    setCode(getBoilerplate(language, problem?.id));
   };
 
   return (
@@ -100,6 +117,7 @@ export function EditorPanel({ onRun, onSubmit, isRunning, problem }: EditorPanel
               language={language}
               value={code}
               onChange={(value) => setCode(value || "")}
+              problemId={problem?.id}
             />
           </div>
         </Panel>

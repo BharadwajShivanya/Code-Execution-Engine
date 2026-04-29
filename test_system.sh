@@ -64,8 +64,12 @@ echo -e "${BLUE}🐳 Step 3: Building Docker Sandbox Image${NC}"
 echo "────────────────────────────────────────────"
 
 print_info "Building judge-python Docker image..."
-docker build -t judge-python dockerfiles/python/ > /tmp/docker_build.log 2>&1
-print_status $? "Docker image built successfully"
+docker build -t judge-python dockerfiles/python/ >> /tmp/docker_build.log 2>&1
+print_status $? "Docker judge-python image built successfully"
+
+print_info "Building judge-cpp Docker image..."
+docker build -t judge-cpp Code-Execution-Engine/dockerfiles/cpp/ >> /tmp/docker_build.log 2>&1
+print_status $? "Docker judge-cpp image built successfully"
 
 echo ""
 
@@ -102,11 +106,11 @@ echo ""
 echo -e "${BLUE}🧪 Step 5: Running Integration Tests${NC}"
 echo "────────────────────────────────────────────"
 
-# Test 1: Simple print statement
+# Test 1: Simple python program
 print_info "Test 1: Simple Python program (should be Accepted)"
 RESPONSE=$(curl -s -X POST http://localhost:8090/api/v1/submissions \
   -H "Content-Type: application/json" \
-  -d '{"language":"python","code":"print(\"Hello World\")","time_ms":2000,"memory_mb":128}')
+  -d '{"language":"python","code":"print(\"Hello World\")","time_ms":2000,"memory_mb":128,"tests":[{"input":"","expected":"Hello World"}]}')
 
 if echo "$RESPONSE" | grep -q '"id"'; then
     print_status 0 "API accepted submission"
@@ -119,8 +123,6 @@ sleep 5
 # Check worker output
 if grep -q "Result: Accepted" /tmp/worker.log; then
     print_status 0 "Test 1 passed: Code executed successfully"
-    # Clean up the log for next test
-    sed -i '' '/Result: Accepted/d' /tmp/worker.log
 else
     print_status 1 "Test 1 failed: Expected 'Accepted' status"
 fi
@@ -135,7 +137,6 @@ sleep 5
 
 if grep -q "Result: Runtime Error" /tmp/worker.log; then
     print_status 0 "Test 2 passed: Runtime error detected correctly"
-    sed -i '' '/Result: Runtime Error/d' /tmp/worker.log
 else
     print_status 1 "Test 2 failed: Expected 'Runtime Error' status"
 fi
@@ -150,9 +151,22 @@ sleep 8
 
 if grep -q "Result: Time Limit Exceeded" /tmp/worker.log; then
     print_status 0 "Test 3 passed: Time limit enforced correctly"
-    sed -i '' '/Result: Time Limit Exceeded/d' /tmp/worker.log
 else
     print_status 1 "Test 3 failed: Expected 'Time Limit Exceeded' status"
+fi
+
+# Test 4: Compilation error
+print_info "Test 4: Compilation error (should be Compilation Error)"
+RESPONSE=$(curl -s -X POST http://localhost:8090/api/v1/submissions \
+  -H "Content-Type: application/json" \
+  -d '{"language":"cpp","code":"#include <iostream>\nint main() { printf(undeclared); return 0; }","time_ms":2000,"memory_mb":128}')
+
+sleep 5
+
+if grep -q "Compilation Error" /tmp/worker.log; then
+    print_status 0 "Test 4 passed: Compilation error detected correctly"
+else
+    print_status 1 "Test 4 failed: Expected 'Compilation Error' status"
 fi
 
 echo ""

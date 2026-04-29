@@ -57,47 +57,58 @@ func Execute(sub models.Submission) models.Result {
 
 	// 1️⃣ Create temp directory on host
 	dir, _ := os.MkdirTemp("", "exec-*")
+	os.Chmod(dir, 0777) // Allow docker non-root user to write compilation outputs
 	defer os.RemoveAll(dir)
 
 	// Language-specific config
 	var image, filename string
+	var compileCmd []string
 	var runCmd []string
 	switch strings.ToLower(sub.Language) {
 	case "python":
 		image = "judge-python"
 		filename = "main.py"
+		compileCmd = nil
 		runCmd = []string{"python", "/code/main.py"}
 	case "javascript":
 		image = "judge-node"
 		filename = "main.js"
+		compileCmd = nil
 		runCmd = []string{"node", "/code/main.js"}
 	case "typescript":
 		image = "judge-node"
 		filename = "main.ts"
-		runCmd = []string{"sh", "-c", "npm install -g typescript && tsc /code/main.ts && node /code/main.js"}
+		compileCmd = []string{"sh", "-c", "npm install -g typescript > /dev/null 2>&1 && tsc /code/main.ts"}
+		runCmd = []string{"node", "/code/main.js"}
 	case "cpp":
 		image = "judge-cpp"
 		filename = "main.cpp"
-		runCmd = []string{"sh", "-c", "g++ /code/main.cpp -o /code/main && /code/main"}
+		compileCmd = []string{"sh", "-c", "g++ /code/main.cpp -o /code/main"}
+		runCmd = []string{"/code/main"}
 	case "c":
 		image = "judge-cpp"
 		filename = "main.c"
-		runCmd = []string{"sh", "-c", "gcc /code/main.c -o /code/main && /code/main"}
+		compileCmd = []string{"sh", "-c", "gcc /code/main.c -o /code/main"}
+		runCmd = []string{"/code/main"}
 	case "java":
 		image = "judge-java"
 		filename = "Main.java"
-		runCmd = []string{"sh", "-c", "javac /code/Main.java && java -cp /code Main"}
+		compileCmd = []string{"sh", "-c", "javac /code/Main.java"}
+		runCmd = []string{"java", "-cp", "/code", "Main"}
 	case "go":
 		image = "judge-go"
 		filename = "main.go"
-		runCmd = []string{"sh", "-c", "cd /code && go run main.go"}
+		compileCmd = []string{"sh", "-c", "cd /code && go build -o main main.go"}
+		runCmd = []string{"/code/main"}
 	case "rust":
 		image = "judge-rust"
 		filename = "main.rs"
-		runCmd = []string{"sh", "-c", "rustc /code/main.rs -o /code/main 2>&1 && /code/main"}
+		compileCmd = []string{"sh", "-c", "rustc /code/main.rs -o /code/main"}
+		runCmd = []string{"/code/main"}
 	default:
 		image = "judge-python"
 		filename = "main.py"
+		compileCmd = nil
 		runCmd = []string{"python", "/code/main.py"}
 	}
 
@@ -113,6 +124,49 @@ go 1.21
 		os.WriteFile(filepath.Join(dir, "go.mod"), []byte(goModContent), 0644)
 	}
 
+	// 2️⃣ Compilation Stage (The First Gate)
+	if len(compileCmd) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		cmd := exec.CommandContext(
+			ctx,
+			"docker", "run", "-i", "--rm",
+			"--network", "none",
+			"-v", dir+":/code",
+			image,
+		)
+		cmd.Args = append(cmd.Args, compileCmd...)
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		err := cmd.Run()
+
+		if err != nil || stderr.Len() > 0 {
+			// Capture the compilation error output
+			compileOutput := stderr.String()
+			if compileOutput == "" {
+				compileOutput = stdout.String()
+			}
+			if compileOutput == "" && err != nil {
+				if ctx.Err() == context.DeadlineExceeded {
+					compileOutput = "Compilation Time Limit Exceeded"
+				} else {
+					compileOutput = err.Error()
+				}
+			}
+
+			// Compilation Error
+			return models.Result{
+				Status:  "completed",
+				Verdict: "Compilation Error",
+				Stderr:  compileOutput,
+			}
+		}
+	}
+
 	// 3️⃣ Build testcase list (fallback chain)
 	tests := sub.Tests
 	if len(tests) == 0 && sub.Input != "" {
@@ -126,6 +180,7 @@ go 1.21
 	overallVerdict := "Accepted"
 
 	for _, tc := range tests {
+		// 4️⃣ Execution Stage (The Sandbox Gate)
 		ctx, cancel := context.WithTimeout(
 			context.Background(),
 			time.Duration(sub.TimeMs)*time.Millisecond,
@@ -159,13 +214,15 @@ go 1.21
 			verdict = "Time Limit Exceeded"
 			passed = false
 		} else if err != nil {
-			// Non-zero exit (compile error, segfault, OOM, runtime panic, etc.)
 			verdict = "Runtime Error"
 			passed = false
-		} else if stderr.Len() > 0 {
-			// Some langs write warnings/errors to stderr even on exit 0
-			verdict = "Runtime Error"
-			passed = false
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				// Exit code 137 (SIGKILL) or 139 (SIGSEGV) frequently indicate out-of-memory in Docker when constrained.
+				// For strict Memory Limit Exceeded, 137 is the standard docker OOM exit code.
+				if exitErr.ExitCode() == 137 || exitErr.ExitCode() == 139 {
+					verdict = "Memory Limit Exceeded"
+				}
+			}
 		}
 
 		// ── Verdict when no expected value (Run / custom testcase) ────────────
@@ -173,11 +230,10 @@ go 1.21
 		// Use "Executed" to distinguish from a real correctness check.
 		if verdict == "Accepted" && tc.Expected == "" {
 			verdict = "Executed"
-			// passed stays true so it doesn't show as an error — just as neutral
 		}
 
 		// ── Wrong Answer check (Submit / tests with expected values) ─────────
-		// Uses normalizeOutput so "[0, 1]" matches "[0,1]", etc. (Judge0-style)
+		// 5️⃣ Verification Stage (The Grading Gate)
 		if verdict == "Accepted" && tc.Expected != "" {
 			gotNorm := normalizeOutput(output)
 			wantNorm := normalizeOutput(tc.Expected)

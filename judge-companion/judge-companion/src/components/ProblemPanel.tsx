@@ -249,11 +249,11 @@ export function ProblemPanel({ problem, testResults, isRunning, consoleOutput }:
                       <div className="font-mono text-xs space-y-1.5 bg-background/60 rounded p-2">
                         <div className="flex gap-2">
                           <span className="text-muted-foreground w-20 shrink-0">Input:</span>
-                          <span className="text-foreground break-all">{result.input || "—"}</span>
+                          <span className="text-foreground break-all whitespace-pre-wrap">{result.input || "—"}</span>
                         </div>
                         <div className="flex gap-2">
                           <span className="text-muted-foreground w-20 shrink-0">Expected:</span>
-                          <span className="text-green-400 break-all">
+                          <span className={result.verdict?.toLowerCase() === "executed" ? "text-muted-foreground break-all whitespace-pre-wrap" : "text-green-400 break-all whitespace-pre-wrap"}>
                             {result.expected || "(not checked)"}
                           </span>
                         </div>
@@ -261,7 +261,11 @@ export function ProblemPanel({ problem, testResults, isRunning, consoleOutput }:
                           <span className="text-muted-foreground w-20 shrink-0">Output:</span>
                           <span
                             className={
-                              result.passed ? "text-green-400" : "text-red-400"
+                              result.verdict?.toLowerCase() === "executed"
+                                ? "text-foreground break-all whitespace-pre-wrap"
+                                : result.passed
+                                ? "text-green-400 break-all whitespace-pre-wrap"
+                                : "text-red-400 break-all whitespace-pre-wrap"
                             }
                           >
                             {result.output?.trim() || "(empty)"}

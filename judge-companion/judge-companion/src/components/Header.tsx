@@ -19,9 +19,14 @@ import { AuthModal, AuthUser, getStoredUser, clearStoredUser } from "@/component
 
 interface HeaderProps {
   progressHint?: string;
+  onOpenProblemList?: () => void;
+  onPrevProblem?: () => void;
+  onNextProblem?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
-export function Header({ progressHint }: HeaderProps) {
+export function Header({ progressHint, onOpenProblemList, onPrevProblem, onNextProblem, hasPrev, hasNext }: HeaderProps) {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -53,20 +58,37 @@ export function Header({ progressHint }: HeaderProps) {
           <div className="hidden md:flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={onPrevProblem}
+                  disabled={!hasPrev}
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Previous Problem</TooltipContent>
             </Tooltip>
             
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-foreground"
+              onClick={onOpenProblemList}
+            >
               Problem List
             </Button>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={onNextProblem}
+                  disabled={!hasNext}
+                >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
