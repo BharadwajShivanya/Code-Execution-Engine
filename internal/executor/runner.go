@@ -112,6 +112,8 @@ func Execute(sub models.Submission) models.Result {
 		runCmd = []string{"python", "/code/main.py"}
 	}
 
+	InjectDriverCode(&sub)
+
 	codePath := filepath.Join(dir, filename)
 	os.WriteFile(codePath, []byte(sub.Code), 0644)
 

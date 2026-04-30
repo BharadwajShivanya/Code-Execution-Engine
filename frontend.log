@@ -3,21 +3,14 @@
 > vite
 
 Port 8080 is in use, trying another one...
+Port 8081 is in use, trying another one...
+Port 8082 is in use, trying another one...
 
-  VITE v5.4.21  ready in 386 ms
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m459[22m[2m[0m ms[22m
 
-  ➜  Local:   http://localhost:8081/
-  ➜  Network: http://192.168.1.10:8081/
-12:51:15 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css
-12:51:30 AM [vite] hmr update /src/components/ProblemPanel.tsx, /src/index.css
-12:59:13 AM [vite] hmr update /src/components/CodeEditor.tsx, /src/index.css
-12:59:13 AM [vite] hmr invalidate /src/components/CodeEditor.tsx Could not Fast Refresh ("defaultCode" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
-12:59:13 AM [vite] hmr update /src/index.css, /src/components/EditorPanel.tsx
-1:07:17 AM [vite] hmr update /src/components/Header.tsx, /src/index.css
-1:07:35 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css
-1:15:06 AM [vite] hmr update /src/components/CodeEditor.tsx, /src/index.css
-1:15:06 AM [vite] hmr invalidate /src/components/CodeEditor.tsx Could not Fast Refresh ("defaultCode" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
-1:15:06 AM [vite] hmr update /src/index.css, /src/components/EditorPanel.tsx
-1:15:30 AM [vite] hmr update /src/components/EditorPanel.tsx, /src/index.css
-1:15:39 AM [vite] hmr update /src/components/EditorPanel.tsx, /src/index.css
-1:22:33 AM [vite] hmr update /src/pages/Index.tsx, /src/index.css
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m8083[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.137.1:[1m8083[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://10.36.22.177:[1m8083[22[2m10:43:57 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Index.tsx, /src/index.css[22m
+[2m10:46:57 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Index.tsx, /src/index.css[22m
+[2m10:47:10 pm[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33m@radix-ui/react-accordion[32m[39m
+[2m10:47:10 pm[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m

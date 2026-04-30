@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { ProblemPanel } from "@/components/ProblemPanel";
 import { EditorPanel } from "@/components/EditorPanel";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
@@ -12,6 +12,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 interface TestResult {
   passed: boolean;
@@ -61,6 +67,7 @@ const Index = () => {
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [progressHint, setProgressHint] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const currentIndex = problem ? allProblems.findIndex(p => p.id === problem.id) : -1;
 
@@ -90,6 +97,7 @@ const Index = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            problem_id: problem?.id,
             language,
             code,
             tests,
@@ -163,7 +171,7 @@ const Index = () => {
         setIsRunning(false);
       }
     },
-    []
+    [problem]
   );
 
   const runCustomTest = useCallback(
@@ -245,34 +253,87 @@ const Index = () => {
       {/* Problem List Sidebar */}
       <Sheet open={problemListOpen} onOpenChange={setProblemListOpen}>
         <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-card p-0 flex flex-col">
-          <SheetHeader className="p-4 border-b border-border">
+          <SheetHeader className="p-4 border-b border-border space-y-4">
             <SheetTitle className="text-left">Problem List</SheetTitle>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search by title or number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-background border border-border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
           </SheetHeader>
-          <div className="flex-1 overflow-auto">
-            {allProblems.map((p, idx) => (
-              <button
-                key={p.id}
-                onClick={() => {
-                  setProblem(p);
-                  setProblemListOpen(false);
-                }}
-                className={`w-full text-left p-4 border-b border-border hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                  problem?.id === p.id ? "bg-muted" : ""
-                }`}
-              >
-                <div>
-                  <span className="text-muted-foreground mr-3">{idx + 1}.</span>
-                  <span className="font-medium text-foreground">{p.title}</span>
-                </div>
-                <Badge className={
-                  p.difficulty.toLowerCase() === "easy" ? "bg-green-500/20 text-green-400 border-0" :
-                  p.difficulty.toLowerCase() === "medium" ? "bg-yellow-500/20 text-yellow-400 border-0" :
-                  "bg-red-500/20 text-red-400 border-0"
-                }>
-                  {p.difficulty}
-                </Badge>
-              </button>
-            ))}
+          <div className="flex-1 overflow-auto p-4">
+            {(() => {
+              const numberedProblems = allProblems.map((p, idx) => ({ ...p, number: idx + 1 }));
+              const filtered = numberedProblems.filter(p => {
+                if (!searchQuery) return true;
+                const q = searchQuery.toLowerCase();
+                return p.title.toLowerCase().includes(q) || p.number.toString() === q;
+              });
+
+              const easy = filtered.filter(p => p.difficulty.toLowerCase() === "easy");
+              const medium = filtered.filter(p => p.difficulty.toLowerCase() === "medium");
+              const hard = filtered.filter(p => p.difficulty.toLowerCase() === "hard");
+
+              const renderGroup = (
+                value: string,
+                title: string,
+                items: typeof numberedProblems,
+                badgeClass: string,
+                countClass: string
+              ) => {
+                if (items.length === 0) return null;
+                return (
+                  <AccordionItem value={value} className="border-border">
+                    <AccordionTrigger className="py-3 hover:no-underline hover:bg-muted/30 px-1 rounded-md">
+                      <span className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold ${countClass}`}>{title}</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{items.length}</span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1 pb-2">
+                      <div className="space-y-1">
+                        {items.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              setProblem(allProblems[p.number - 1]);
+                              setProblemListOpen(false);
+                            }}
+                            className={`w-full text-left p-3 rounded-md border border-transparent hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                              problem?.id === p.id ? "bg-muted border-border" : ""
+                            }`}
+                          >
+                            <div>
+                              <span className="text-muted-foreground mr-2">{p.number}.</span>
+                              <span className="font-medium text-foreground text-sm">{p.title}</span>
+                            </div>
+                            <Badge className={badgeClass}>{p.difficulty}</Badge>
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              };
+
+              return (
+                <>
+                  {filtered.length === 0 && (
+                    <div className="text-center text-muted-foreground mt-8">No problems found.</div>
+                  )}
+                  <Accordion type="multiple" defaultValue={["easy", "medium", "hard"]} className="w-full">
+                    {renderGroup("easy", "Easy", easy, "bg-green-500/20 text-green-400 border-0", "text-green-400")}
+                    {renderGroup("medium", "Medium", medium, "bg-yellow-500/20 text-yellow-400 border-0", "text-yellow-400")}
+                    {renderGroup("hard", "Hard", hard, "bg-red-500/20 text-red-400 border-0", "text-red-400")}
+                  </Accordion>
+                </>
+              );
+            })()}
           </div>
         </SheetContent>
       </Sheet>

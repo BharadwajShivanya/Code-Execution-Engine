@@ -28,6 +28,7 @@ func (tc TestCases) Value() (driver.Value, error) {
 
 type Submission struct {
 	ID        string    `json:"id" gorm:"primaryKey;type:varchar(255)"`
+	ProblemID string    `json:"problem_id"`
 	UserID    *string   `json:"user_id" gorm:"type:varchar(255);index"`
 	Language  string    `json:"language"`
 	Code      string    `json:"code" gorm:"type:text"`

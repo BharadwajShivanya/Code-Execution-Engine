@@ -19,9 +19,8 @@ interface AIHelpPanelProps {
   problemDescription?: string;
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // ─── Built-in smart hints (works without an API key) ──────────────────────────
 function generateLocalHint(
@@ -37,7 +36,7 @@ function generateLocalHint(
   const lines: string[] = [];
 
   lines.push(`## 🤖 Smart Hint (offline mode)`);
-  lines.push(`\n*Add a Gemini API key to .env.local to enable full AI responses.*\n`);
+  lines.push(`\n*Add a free Groq API key to .env.local to enable full AI responses.*\n`);
   lines.push(`---`);
 
   // Problem-specific hints
@@ -125,16 +124,16 @@ function generateLocalHint(
   }
 
   lines.push(`\n---`);
-  lines.push(`\n💡 *To get full AI-powered responses, add your free Gemini API key:*`);
-  lines.push(`\`\`\`\n# judge-companion/.env.local\nVITE_GEMINI_API_KEY=your_key_here\n\`\`\``);
-  lines.push(`Get a free key at: https://aistudio.google.com/app/apikey`);
+  lines.push(`\n💡 *To get full AI-powered responses, add your free Groq API key:*`);
+  lines.push(`\`\`\`\n# judge-companion/.env.local\nVITE_GROQ_API_KEY=gsk_...\n\`\`\``);
+  lines.push(`Get a free key at: https://console.groq.com/keys`);
 
   return lines.join("\n");
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
 const isRealKey = (key: string) =>
-  key && key !== "YOUR_GEMINI_API_KEY_HERE" && key.startsWith("AIza");
+  key && key !== "YOUR_REAL_API_KEY_GOES_HERE" && key.startsWith("gsk_");
 
 export function AIHelpPanel({
   open,
@@ -159,7 +158,7 @@ export function AIHelpPanel({
     setIsLocal(false);
 
     // ── Use local smart hints if no valid API key ───────────────────────────
-    if (!isRealKey(GEMINI_API_KEY)) {
+    if (!isRealKey(GROQ_API_KEY)) {
       await new Promise((r) => setTimeout(r, 600)); // small delay to feel natural
       setResponse(generateLocalHint(code, language, problemTitle ?? "", prompt));
       setIsLocal(true);
@@ -167,7 +166,7 @@ export function AIHelpPanel({
       return;
     }
 
-    // ── Real Gemini API call ────────────────────────────────────────────────
+    // ── Real Groq API call ────────────────────────────────────────────────
     const fullPrompt = `You are a helpful coding assistant for a competitive programming platform.
 
 Problem: ${problemTitle || "Unknown"}
@@ -183,15 +182,16 @@ User's question: ${prompt}
 Give a clear, concise response. If pointing out errors, be specific about which line or concept. Do NOT give the full solution directly — give hints and explanations.`;
 
     try {
-      const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      const res = await fetch(GROQ_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          },
+          model: "llama3-8b-8192",
+          messages: [{ role: "user", content: fullPrompt }],
+          temperature: 0.7,
         }),
       });
 
@@ -202,7 +202,7 @@ Give a clear, concise response. If pointing out errors, be specific about which 
 
       const data = await res.json();
       const text =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        data?.choices?.[0]?.message?.content ||
         "No response generated.";
       setResponse(text);
     } catch (e: unknown) {
@@ -210,7 +210,7 @@ Give a clear, concise response. If pointing out errors, be specific about which 
       setResponse(generateLocalHint(code, language, problemTitle ?? "", prompt));
       setIsLocal(true);
       setError(
-        `Gemini API error: ${e instanceof Error ? e.message : "Unknown error"}. Showing local hints instead.`
+        `Groq API error: ${e instanceof Error ? e.message : "Unknown error"}. Showing local hints instead.`
       );
     } finally {
       setLoading(false);
@@ -230,7 +230,7 @@ Give a clear, concise response. If pointing out errors, be specific about which 
             </div>
             AI Help
             <Badge variant="secondary" className="text-xs ml-1">
-              {isRealKey(GEMINI_API_KEY) ? "Gemini" : "Smart Hints"}
+              {isRealKey(GROQ_API_KEY) ? "Llama 3 (Groq)" : "Smart Hints"}
             </Badge>
           </SheetTitle>
         </SheetHeader>
@@ -245,18 +245,18 @@ Give a clear, concise response. If pointing out errors, be specific about which 
           </div>
 
           {/* API key notice */}
-          {!isRealKey(GEMINI_API_KEY) && (
+          {!isRealKey(GROQ_API_KEY) && (
             <div className="flex items-start gap-2 bg-amber-500/10 text-amber-400 rounded-lg p-3 text-xs shrink-0">
               <Lightbulb className="h-4 w-4 shrink-0 mt-0.5" />
               <span>
                 Running in <strong>offline mode</strong>. Add a free{" "}
                 <a
-                  href="https://aistudio.google.com/app/apikey"
+                  href="https://console.groq.com/keys"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
                 >
-                  Gemini API key
+                  Groq API key
                 </a>{" "}
                 to <code className="bg-amber-500/20 px-1 rounded">.env.local</code> for full AI responses.
               </span>
